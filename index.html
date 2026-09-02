@@ -10,7 +10,7 @@
     >
 
     <title>
-        Práctica 1.2 | Esfera rebotando en una caja de cristal
+        Práctica 1.2 | Colisiones de esferas
     </title>
 
     <link
@@ -26,22 +26,23 @@
         }
     }
     </script>
+
 </head>
 
 <body>
 
     <!-- ====================================================== -->
-    <!-- INFORMACIÓN DE LA PRÁCTICA -->
+    <!-- INFORMACIÓN -->
     <!-- ====================================================== -->
 
     <header class="panel info-panel">
 
         <h1>
-            Esfera rebotando en una caja de cristal
+            Colisiones de esferas
         </h1>
 
         <p>
-            Three.js: movimiento 3D, vectores y colisiones con límites.
+            Three.js: movimiento, vectores y colisiones 3D.
         </p>
 
     </header>
@@ -66,16 +67,59 @@
         </div>
 
 
-        <!-- VELOCIDAD -->
+        <!-- ================================================== -->
+        <!-- CANTIDAD DE ESFERAS -->
+        <!-- ================================================== -->
 
         <section class="control-section">
 
             <h3>
-                Velocidad de la esfera
+                Esferas
+            </h3>
+
+            <div class="control-group">
+
+                <div class="control-label">
+
+                    <label for="sphereCount">
+                        Cantidad
+                    </label>
+
+                    <span id="sphereCountValue">
+                        3
+                    </span>
+
+                </div>
+
+                <input
+                    type="range"
+                    id="sphereCount"
+                    min="1"
+                    max="20"
+                    step="1"
+                    value="3"
+                >
+
+            </div>
+
+        </section>
+
+
+        <div class="separator"></div>
+
+
+        <!-- ================================================== -->
+        <!-- VELOCIDAD -->
+        <!-- ================================================== -->
+
+        <section class="control-section">
+
+            <h3>
+                Velocidad
             </h3>
 
 
-            <!-- EJE X -->
+            <!-- X -->
 
             <div class="control-group">
 
@@ -91,11 +135,10 @@
 
                 </div>
 
-
                 <input
                     type="range"
                     id="speedX"
-                    min="-0.10"
+                    min="0"
                     max="0.10"
                     step="0.001"
                     value="0.035"
@@ -104,7 +147,7 @@
             </div>
 
 
-            <!-- EJE Y -->
+            <!-- Y -->
 
             <div class="control-group">
 
@@ -120,11 +163,10 @@
 
                 </div>
 
-
                 <input
                     type="range"
                     id="speedY"
-                    min="-0.10"
+                    min="0"
                     max="0.10"
                     step="0.001"
                     value="0.027"
@@ -133,7 +175,7 @@
             </div>
 
 
-            <!-- EJE Z -->
+            <!-- Z -->
 
             <div class="control-group">
 
@@ -149,11 +191,10 @@
 
                 </div>
 
-
                 <input
                     type="range"
                     id="speedZ"
-                    min="-0.10"
+                    min="0"
                     max="0.10"
                     step="0.001"
                     value="0.041"

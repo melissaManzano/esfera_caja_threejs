@@ -9,14 +9,10 @@ import {
 // ESCENA
 // ============================================================
 
-const scene =
-    new THREE.Scene();
-
+const scene = new THREE.Scene();
 
 scene.background =
-    new THREE.Color(
-        0x07111f
-    );
+    new THREE.Color(0x07111f);
 
 
 // ============================================================
@@ -68,11 +64,8 @@ renderer.setPixelRatio(
 
 
 renderer.setSize(
-
     window.innerWidth,
-
     window.innerHeight
-
 );
 
 
@@ -116,12 +109,6 @@ controls.minDistance = 7;
 
 controls.maxDistance = 30;
 
-controls.minPolarAngle = 0.1;
-
-controls.maxPolarAngle =
-    Math.PI - 0.1;
-
-
 controls.update();
 
 
@@ -157,21 +144,19 @@ scene.add(light);
 
 
 // ============================================================
-// VARIABLES DE LA CAJA
+// CONFIGURACIÓN DE LA CAJA
 // ============================================================
 
 const boxSize = 10;
 
-const radius = 0.5;
-
-
-const limit =
-    boxSize / 2 -
-    radius;
-
+const sphereRadius = 0.5;
 
 const wallPosition =
     boxSize / 2;
+
+const limit =
+    wallPosition -
+    sphereRadius;
 
 
 // ============================================================
@@ -180,51 +165,38 @@ const wallPosition =
 
 const boxGeometry =
     new THREE.BoxGeometry(
-
         boxSize,
         boxSize,
         boxSize
-
     );
 
 
 const glassMaterial =
     new THREE.MeshPhysicalMaterial({
 
-        color:
-            0x8fd3ff,
+        color: 0x8fd3ff,
 
-        transparent:
-            true,
+        transparent: true,
 
-        opacity:
-            0.18,
+        opacity: 0.18,
 
-        transmission:
-            0.9,
+        transmission: 0.9,
 
-        roughness:
-            0.05,
+        roughness: 0.05,
 
-        metalness:
-            0,
+        metalness: 0,
 
-        side:
-            THREE.DoubleSide,
+        side: THREE.DoubleSide,
 
-        depthWrite:
-            false
+        depthWrite: false
 
     });
 
 
 const glassBox =
     new THREE.Mesh(
-
         boxGeometry,
-
         glassMaterial
-
     );
 
 
@@ -234,7 +206,7 @@ scene.add(
 
 
 // ============================================================
-// BORDES DE LA CAJA
+// BORDES
 // ============================================================
 
 const edges =
@@ -246,8 +218,7 @@ const edges =
 
         new THREE.LineBasicMaterial({
 
-            color:
-                0xbfe8ff
+            color: 0xbfe8ff
 
         })
 
@@ -260,155 +231,331 @@ scene.add(
 
 
 // ============================================================
-// ESFERA
+// COLORES
 // ============================================================
 
-const sphere =
-    new THREE.Mesh(
+const normalColor =
+    new THREE.Color(
+        0xff7043
+    );
 
-        new THREE.SphereGeometry(
 
-            radius,
-            32,
-            32
+const collisionColor =
+    new THREE.Color(
+        0xffff00
+    );
 
-        ),
 
+// Tiempo que permanecerá
+// el cambio de color.
+
+const collisionColorDuration =
+    180;
+
+
+// ============================================================
+// ESFERAS
+// ============================================================
+
+const spheres = [];
+
+
+// Geometría compartida por todas
+// las esferas.
+
+const sphereGeometry =
+    new THREE.SphereGeometry(
+        sphereRadius,
+        32,
+        32
+    );
+
+
+// ============================================================
+// VELOCIDADES GLOBALES
+// ============================================================
+
+let speedXValue = 0.035;
+
+let speedYValue = 0.027;
+
+let speedZValue = 0.041;
+
+
+// ============================================================
+// GENERAR DIRECCIÓN ALEATORIA
+// ============================================================
+
+function randomSign() {
+
+    return Math.random() < 0.5
+        ? -1
+        : 1;
+
+}
+
+
+// ============================================================
+// COMPROBAR POSICIÓN DISPONIBLE
+// ============================================================
+
+function positionIsAvailable(
+    position
+) {
+
+    for (const sphere of spheres) {
+
+        const distance =
+            position.distanceTo(
+                sphere.mesh.position
+            );
+
+
+        if (
+            distance <
+            sphereRadius * 2.2
+        ) {
+
+            return false;
+
+        }
+
+    }
+
+
+    return true;
+
+}
+
+
+// ============================================================
+// GENERAR POSICIÓN ALEATORIA
+// ============================================================
+
+function createRandomPosition() {
+
+    const position =
+        new THREE.Vector3();
+
+
+    let attempts = 0;
+
+
+    do {
+
+        position.set(
+
+            THREE.MathUtils.randFloat(
+                -limit,
+                limit
+            ),
+
+            THREE.MathUtils.randFloat(
+                -limit,
+                limit
+            ),
+
+            THREE.MathUtils.randFloat(
+                -limit,
+                limit
+            )
+
+        );
+
+
+        attempts++;
+
+    }
+
+    while (
+
+        !positionIsAvailable(position) &&
+
+        attempts < 100
+
+    );
+
+
+    return position;
+
+}
+
+
+// ============================================================
+// CREAR ESFERA
+// ============================================================
+
+function createSphere() {
+
+    const material =
         new THREE.MeshStandardMaterial({
 
             color:
-                0xff7043,
+                normalColor.clone(),
 
             roughness:
                 0.35
 
-        })
+        });
 
+
+    const mesh =
+        new THREE.Mesh(
+
+            sphereGeometry,
+
+            material
+
+        );
+
+
+    mesh.position.copy(
+        createRandomPosition()
     );
 
 
-scene.add(
+    scene.add(
+        mesh
+    );
+
+
+    const sphereObject = {
+
+        mesh: mesh,
+
+        velocity:
+            new THREE.Vector3(
+
+                speedXValue *
+                randomSign(),
+
+                speedYValue *
+                randomSign(),
+
+                speedZValue *
+                randomSign()
+
+            ),
+
+        collisionUntil: 0
+
+    };
+
+
+    spheres.push(
+        sphereObject
+    );
+
+}
+
+
+// ============================================================
+// ELIMINAR ESFERA
+// ============================================================
+
+function removeSphere() {
+
+    if (
+        spheres.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    const sphere =
+        spheres.pop();
+
+
+    scene.remove(
+        sphere.mesh
+    );
+
+
+    sphere.mesh.material.dispose();
+
+}
+
+
+// ============================================================
+// CAMBIAR CANTIDAD DE ESFERAS
+// ============================================================
+
+function setSphereCount(
+    amount
+) {
+
+    while (
+        spheres.length < amount
+    ) {
+
+        createSphere();
+
+    }
+
+
+    while (
+        spheres.length > amount
+    ) {
+
+        removeSphere();
+
+    }
+
+}
+
+
+// ============================================================
+// MOSTRAR COLISIÓN MEDIANTE COLOR
+// ============================================================
+
+function showCollision(
     sphere
-);
+) {
+
+    sphere.collisionUntil =
+
+        performance.now() +
+
+        collisionColorDuration;
+
+
+    sphere.mesh.material.color.copy(
+        collisionColor
+    );
+
+}
 
 
 // ============================================================
-// VELOCIDAD DE LA ESFERA
+// ACTUALIZAR COLORES
 // ============================================================
 
-const velocity =
-    new THREE.Vector3(
+function updateCollisionColors() {
 
-        0.035,
-
-        0.027,
-
-        0.041
-
-    );
+    const currentTime =
+        performance.now();
 
 
-// ============================================================
-// CONTROLES HTML DE VELOCIDAD
-// ============================================================
+    for (
+        const sphere of spheres
+    ) {
 
-const speedX =
-    document.getElementById(
-        'speedX'
-    );
+        if (
+            currentTime >
+            sphere.collisionUntil
+        ) {
 
-
-const speedY =
-    document.getElementById(
-        'speedY'
-    );
-
-
-const speedZ =
-    document.getElementById(
-        'speedZ'
-    );
-
-
-const speedXValue =
-    document.getElementById(
-        'speedXValue'
-    );
-
-
-const speedYValue =
-    document.getElementById(
-        'speedYValue'
-    );
-
-
-const speedZValue =
-    document.getElementById(
-        'speedZValue'
-    );
-
-
-// ============================================================
-// EVENTO VELOCIDAD X
-// ============================================================
-
-speedX.addEventListener(
-    'input',
-    () => {
-
-        velocity.x =
-            parseFloat(
-                speedX.value
+            sphere.mesh.material.color.copy(
+                normalColor
             );
 
-
-        speedXValue.textContent =
-            velocity.x.toFixed(3);
+        }
 
     }
-);
 
-
-// ============================================================
-// EVENTO VELOCIDAD Y
-// ============================================================
-
-speedY.addEventListener(
-    'input',
-    () => {
-
-        velocity.y =
-            parseFloat(
-                speedY.value
-            );
-
-
-        speedYValue.textContent =
-            velocity.y.toFixed(3);
-
-    }
-);
-
-
-// ============================================================
-// EVENTO VELOCIDAD Z
-// ============================================================
-
-speedZ.addEventListener(
-    'input',
-    () => {
-
-        velocity.z =
-            parseFloat(
-                speedZ.value
-            );
-
-
-        speedZValue.textContent =
-            velocity.z.toFixed(3);
-
-    }
-);
+}
 
 
 // ============================================================
@@ -417,13 +564,12 @@ speedZ.addEventListener(
 
 const impactMarks = [];
 
-
 const impactDuration =
-    800;
+    700;
 
 
 // ============================================================
-// CREAR MARCA DE IMPACTO
+// CREAR MARCA
 // ============================================================
 
 function createImpactMark(
@@ -433,44 +579,33 @@ function createImpactMark(
 
     const geometry =
         new THREE.RingGeometry(
-
             0.12,
-
             0.38,
-
             32
-
         );
 
 
     const material =
         new THREE.MeshBasicMaterial({
 
-            color:
-                0xffd54f,
+            color: 0xffd54f,
 
-            transparent:
-                true,
+            transparent: true,
 
-            opacity:
-                1,
+            opacity: 1,
 
             side:
                 THREE.DoubleSide,
 
-            depthWrite:
-                false
+            depthWrite: false
 
         });
 
 
     const mark =
         new THREE.Mesh(
-
             geometry,
-
             material
-
         );
 
 
@@ -479,11 +614,9 @@ function createImpactMark(
     );
 
 
-    // ========================================================
-    // ORIENTACIÓN SEGÚN LA PARED
-    // ========================================================
-
-    if (axis === 'x') {
+    if (
+        axis === 'x'
+    ) {
 
         mark.rotation.y =
             Math.PI / 2;
@@ -491,7 +624,9 @@ function createImpactMark(
     }
 
 
-    else if (axis === 'y') {
+    else if (
+        axis === 'y'
+    ) {
 
         mark.rotation.x =
             Math.PI / 2;
@@ -540,61 +675,37 @@ function updateImpactMarks() {
             impactMarks[i];
 
 
-        const elapsedTime =
-
+        const elapsed =
             currentTime -
-
             mark.userData.createdAt;
 
 
         const progress =
-
-            elapsedTime /
-
+            elapsed /
             impactDuration;
 
 
-        // ----------------------------------------------------
-        // TRANSPARENCIA
-        // ----------------------------------------------------
-
         mark.material.opacity =
-
             Math.max(
                 0,
                 1 - progress
             );
 
 
-        // ----------------------------------------------------
-        // CRECIMIENTO
-        // ----------------------------------------------------
-
         const scale =
-
             1 +
-
-            progress *
-            0.7;
+            progress * 0.7;
 
 
         mark.scale.set(
-
             scale,
-
             scale,
-
             scale
-
         );
 
 
-        // ----------------------------------------------------
-        // ELIMINAR
-        // ----------------------------------------------------
-
         if (
-            elapsedTime >=
+            elapsed >=
             impactDuration
         ) {
 
@@ -604,7 +715,6 @@ function updateImpactMarks() {
 
 
             mark.geometry.dispose();
-
 
             mark.material.dispose();
 
@@ -622,40 +732,46 @@ function updateImpactMarks() {
 
 
 // ============================================================
-// ANIMACIÓN
+// COLISIONES CON PAREDES
 // ============================================================
 
-function animate() {
+function checkWallCollisions(
+    sphere
+) {
+
+    const position =
+        sphere.mesh.position;
+
+
+    const velocity =
+        sphere.velocity;
 
 
     // ========================================================
-    // MOVIMIENTO
-    // ========================================================
-
-    sphere.position.add(
-        velocity
-    );
-
-
-    // ========================================================
-    // COLISIÓN X
+    // X
     // ========================================================
 
     if (
-
-        sphere.position.x >= limit ||
-
-        sphere.position.x <= -limit
-
+        position.x >= limit ||
+        position.x <= -limit
     ) {
 
         const side =
-
-            sphere.position.x > 0
-
+            position.x > 0
                 ? 1
-
                 : -1;
+
+
+        position.x =
+            side * limit;
+
+
+        velocity.x *= -1;
+
+
+        showCollision(
+            sphere
+        );
 
 
         createImpactMark(
@@ -665,9 +781,9 @@ function animate() {
                 side *
                 wallPosition,
 
-                sphere.position.y,
+                position.y,
 
-                sphere.position.z
+                position.z
 
             ),
 
@@ -675,66 +791,46 @@ function animate() {
 
         );
 
-
-        velocity.x *= -1;
-
-
-        sphere.position.x =
-
-            THREE.MathUtils.clamp(
-
-                sphere.position.x,
-
-                -limit,
-
-                limit
-
-            );
-
-
-        // Actualizar slider para reflejar
-        // el cambio de dirección
-        speedX.value =
-            velocity.x;
-
-
-        speedXValue.textContent =
-            velocity.x.toFixed(3);
-
     }
 
 
     // ========================================================
-    // COLISIÓN Y
+    // Y
     // ========================================================
 
     if (
-
-        sphere.position.y >= limit ||
-
-        sphere.position.y <= -limit
-
+        position.y >= limit ||
+        position.y <= -limit
     ) {
 
         const side =
-
-            sphere.position.y > 0
-
+            position.y > 0
                 ? 1
-
                 : -1;
+
+
+        position.y =
+            side * limit;
+
+
+        velocity.y *= -1;
+
+
+        showCollision(
+            sphere
+        );
 
 
         createImpactMark(
 
             new THREE.Vector3(
 
-                sphere.position.x,
+                position.x,
 
                 side *
                 wallPosition,
 
-                sphere.position.z
+                position.z
 
             ),
 
@@ -742,61 +838,43 @@ function animate() {
 
         );
 
-
-        velocity.y *= -1;
-
-
-        sphere.position.y =
-
-            THREE.MathUtils.clamp(
-
-                sphere.position.y,
-
-                -limit,
-
-                limit
-
-            );
-
-
-        speedY.value =
-            velocity.y;
-
-
-        speedYValue.textContent =
-            velocity.y.toFixed(3);
-
     }
 
 
     // ========================================================
-    // COLISIÓN Z
+    // Z
     // ========================================================
 
     if (
-
-        sphere.position.z >= limit ||
-
-        sphere.position.z <= -limit
-
+        position.z >= limit ||
+        position.z <= -limit
     ) {
 
         const side =
-
-            sphere.position.z > 0
-
+            position.z > 0
                 ? 1
-
                 : -1;
+
+
+        position.z =
+            side * limit;
+
+
+        velocity.z *= -1;
+
+
+        showCollision(
+            sphere
+        );
 
 
         createImpactMark(
 
             new THREE.Vector3(
 
-                sphere.position.x,
+                position.x,
 
-                sphere.position.y,
+                position.y,
 
                 side *
                 wallPosition
@@ -807,31 +885,462 @@ function animate() {
 
         );
 
+    }
 
-        velocity.z *= -1;
+}
 
 
-        sphere.position.z =
+// ============================================================
+// COLISIONES ENTRE ESFERAS
+// ============================================================
 
-            THREE.MathUtils.clamp(
+function checkSphereCollisions() {
 
-                sphere.position.z,
+    const minimumDistance =
+        sphereRadius * 2;
 
-                -limit,
 
-                limit
+    // Comparar cada esfera
+    // con todas las posteriores.
 
+    for (
+        let i = 0;
+        i < spheres.length;
+        i++
+    ) {
+
+        for (
+            let j = i + 1;
+            j < spheres.length;
+            j++
+        ) {
+
+            const sphereA =
+                spheres[i];
+
+
+            const sphereB =
+                spheres[j];
+
+
+            const positionA =
+                sphereA.mesh.position;
+
+
+            const positionB =
+                sphereB.mesh.position;
+
+
+            // Vector que va de
+            // A hacia B.
+
+            const difference =
+                new THREE.Vector3()
+                    .subVectors(
+                        positionB,
+                        positionA
+                    );
+
+
+            const distance =
+                difference.length();
+
+
+            // =================================================
+            // EXISTE COLISIÓN
+            // =================================================
+
+            if (
+                distance <
+                minimumDistance &&
+                distance > 0
+            ) {
+
+                const normal =
+                    difference
+                        .clone()
+                        .normalize();
+
+
+                // =============================================
+                // SEPARAR ESFERAS
+                // =============================================
+
+                const overlap =
+
+                    minimumDistance -
+
+                    distance;
+
+
+                positionA.addScaledVector(
+
+                    normal,
+
+                    -overlap / 2
+
+                );
+
+
+                positionB.addScaledVector(
+
+                    normal,
+
+                    overlap / 2
+
+                );
+
+
+                // =============================================
+                // VELOCIDAD RELATIVA
+                // =============================================
+
+                const relativeVelocity =
+                    new THREE.Vector3()
+                        .subVectors(
+
+                            sphereB.velocity,
+
+                            sphereA.velocity
+
+                        );
+
+
+                const velocityAlongNormal =
+
+                    relativeVelocity.dot(
+                        normal
+                    );
+
+
+                // Si ya se están alejando,
+                // no volvemos a aplicar impulso.
+
+                if (
+                    velocityAlongNormal >= 0
+                ) {
+
+                    continue;
+
+                }
+
+
+                // =============================================
+                // COLISIÓN ELÁSTICA
+                // =============================================
+
+                // Las dos esferas tienen
+                // la misma masa.
+
+                const restitution = 1;
+
+
+                const impulseMagnitude =
+
+                    -(1 + restitution) *
+
+                    velocityAlongNormal /
+
+                    2;
+
+
+                const impulse =
+                    normal
+                        .clone()
+                        .multiplyScalar(
+                            impulseMagnitude
+                        );
+
+
+                sphereA.velocity.addScaledVector(
+                    impulse,
+                    -1
+                );
+
+
+                sphereB.velocity.add(
+                    impulse
+                );
+
+
+                // =============================================
+                // COLOR DE COLISIÓN
+                // =============================================
+
+                showCollision(
+                    sphereA
+                );
+
+
+                showCollision(
+                    sphereB
+                );
+
+            }
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// CONTROLES HTML
+// ============================================================
+
+const sphereCountControl =
+    document.getElementById(
+        'sphereCount'
+    );
+
+
+const sphereCountText =
+    document.getElementById(
+        'sphereCountValue'
+    );
+
+
+const speedXControl =
+    document.getElementById(
+        'speedX'
+    );
+
+
+const speedYControl =
+    document.getElementById(
+        'speedY'
+    );
+
+
+const speedZControl =
+    document.getElementById(
+        'speedZ'
+    );
+
+
+const speedXText =
+    document.getElementById(
+        'speedXValue'
+    );
+
+
+const speedYText =
+    document.getElementById(
+        'speedYValue'
+    );
+
+
+const speedZText =
+    document.getElementById(
+        'speedZValue'
+    );
+
+
+// ============================================================
+// CONTROL CANTIDAD
+// ============================================================
+
+sphereCountControl.addEventListener(
+
+    'input',
+
+    () => {
+
+        const amount =
+            parseInt(
+                sphereCountControl.value
             );
 
 
-        speedZ.value =
-            velocity.z;
+        sphereCountText.textContent =
+            amount;
 
 
-        speedZValue.textContent =
-            velocity.z.toFixed(3);
+        setSphereCount(
+            amount
+        );
 
     }
+
+);
+
+
+// ============================================================
+// MODIFICAR VELOCIDAD POR EJE
+// ============================================================
+
+function changeAxisSpeed(
+    axis,
+    value
+) {
+
+    for (
+        const sphere of spheres
+    ) {
+
+        const current =
+            sphere.velocity[axis];
+
+
+        // Mantener la dirección
+        // actual de cada esfera.
+
+        const direction =
+            current < 0
+                ? -1
+                : 1;
+
+
+        sphere.velocity[axis] =
+            value *
+            direction;
+
+    }
+
+}
+
+
+// ============================================================
+// VELOCIDAD X
+// ============================================================
+
+speedXControl.addEventListener(
+
+    'input',
+
+    () => {
+
+        speedXValue =
+            parseFloat(
+                speedXControl.value
+            );
+
+
+        speedXText.textContent =
+            speedXValue.toFixed(3);
+
+
+        changeAxisSpeed(
+            'x',
+            speedXValue
+        );
+
+    }
+
+);
+
+
+// ============================================================
+// VELOCIDAD Y
+// ============================================================
+
+speedYControl.addEventListener(
+
+    'input',
+
+    () => {
+
+        speedYValue =
+            parseFloat(
+                speedYControl.value
+            );
+
+
+        speedYText.textContent =
+            speedYValue.toFixed(3);
+
+
+        changeAxisSpeed(
+            'y',
+            speedYValue
+        );
+
+    }
+
+);
+
+
+// ============================================================
+// VELOCIDAD Z
+// ============================================================
+
+speedZControl.addEventListener(
+
+    'input',
+
+    () => {
+
+        speedZValue =
+            parseFloat(
+                speedZControl.value
+            );
+
+
+        speedZText.textContent =
+            speedZValue.toFixed(3);
+
+
+        changeAxisSpeed(
+            'z',
+            speedZValue
+        );
+
+    }
+
+);
+
+
+// ============================================================
+// CREAR ESFERAS INICIALES
+// ============================================================
+
+setSphereCount(
+    parseInt(
+        sphereCountControl.value
+    )
+);
+
+
+// ============================================================
+// ANIMACIÓN
+// ============================================================
+
+function animate() {
+
+
+    // ========================================================
+    // MOVER ESFERAS
+    // ========================================================
+
+    for (
+        const sphere of spheres
+    ) {
+
+        sphere.mesh.position.add(
+            sphere.velocity
+        );
+
+
+        checkWallCollisions(
+            sphere
+        );
+
+    }
+
+
+    // ========================================================
+    // COLISIONES ENTRE ESFERAS
+    // ========================================================
+
+    checkSphereCollisions();
+
+
+    // ========================================================
+    // COLORES
+    // ========================================================
+
+    updateCollisionColors();
 
 
     // ========================================================
@@ -861,7 +1370,7 @@ function animate() {
 
 
 // ============================================================
-// INICIAR ANIMACIÓN
+// INICIAR
 // ============================================================
 
 renderer.setAnimationLoop(
@@ -870,11 +1379,13 @@ renderer.setAnimationLoop(
 
 
 // ============================================================
-// CAMBIO DE TAMAÑO
+// RESPONSIVE
 // ============================================================
 
 window.addEventListener(
+
     'resize',
+
     () => {
 
         camera.aspect =
@@ -896,4 +1407,5 @@ window.addEventListener(
         );
 
     }
+
 );

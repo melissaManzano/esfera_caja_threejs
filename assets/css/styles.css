@@ -1,5 +1,5 @@
 /* ============================================================
-   CONFIGURACIÓN GENERAL
+   GENERAL
 ============================================================ */
 
 * {
@@ -43,7 +43,6 @@ canvas {
 
     background: rgba(5, 18, 36, 0.78);
 
-    /* Compatibilidad con Safari */
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
 
@@ -54,15 +53,12 @@ canvas {
 
 .panel h1 {
     margin: 0 0 5px;
-
     font-size: 1.25rem;
 }
 
 .panel p {
     margin: 0;
-
     font-size: 0.9rem;
-
     color: #b8c7d9;
 }
 
@@ -79,13 +75,16 @@ canvas {
     top: 20px;
     right: 20px;
 
-    width: 300px;
+    width: 310px;
+
+    max-height: calc(100vh - 40px);
+
+    overflow-y: auto;
 
     padding: 22px;
 
     background: rgba(7, 17, 31, 0.88);
 
-    /* Compatibilidad con Safari */
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
 
@@ -99,7 +98,7 @@ canvas {
 
 
 /* ============================================================
-   CABECERA DEL PANEL
+   CABECERA
 ============================================================ */
 
 .controls-header {
@@ -112,10 +111,7 @@ canvas {
 
 .controls-header h2 {
     margin: 0;
-
     font-size: 1.2rem;
-
-    font-weight: 600;
 }
 
 .controls-header p {
@@ -128,7 +124,7 @@ canvas {
 
 
 /* ============================================================
-   SECCIÓN DE CONTROLES
+   SECCIONES
 ============================================================ */
 
 .control-section h3 {
@@ -142,8 +138,17 @@ canvas {
 }
 
 
+.separator {
+    height: 1px;
+
+    margin: 22px 0;
+
+    background: rgba(255, 255, 255, 0.1);
+}
+
+
 /* ============================================================
-   GRUPOS DE CONTROL
+   CONTROL
 ============================================================ */
 
 .control-group {
@@ -156,7 +161,7 @@ canvas {
 
 
 /* ============================================================
-   ETIQUETA Y VALOR
+   LABEL
 ============================================================ */
 
 .control-label {
@@ -166,7 +171,7 @@ canvas {
 
     justify-content: space-between;
 
-    margin-bottom: 8px;
+    margin-bottom: 9px;
 }
 
 .control-label label {
@@ -176,15 +181,15 @@ canvas {
 }
 
 .control-label span {
-    min-width: 52px;
+    min-width: 54px;
 
     padding: 4px 7px;
 
     text-align: center;
 
-    font-size: 0.78rem;
-
     font-family: monospace;
+
+    font-size: 0.78rem;
 
     color: #22d3ee;
 
@@ -199,16 +204,14 @@ canvas {
 ============================================================ */
 
 input[type="range"] {
+
     width: 100%;
 
     height: 5px;
 
     margin: 0;
 
-    /* Primero prefijo WebKit */
     -webkit-appearance: none;
-
-    /* Después propiedad estándar */
     appearance: none;
 
     border-radius: 10px;
@@ -221,20 +224,14 @@ input[type="range"] {
 }
 
 
-/* ============================================================
-   SLIDER - CHROME / EDGE / SAFARI
-============================================================ */
+/* Chrome / Edge / Safari */
 
 input[type="range"]::-webkit-slider-thumb {
 
     width: 16px;
-
     height: 16px;
 
-    /* Primero prefijo */
     -webkit-appearance: none;
-
-    /* Después propiedad estándar */
     appearance: none;
 
     background: #22d3ee;
@@ -250,14 +247,11 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 
-/* ============================================================
-   SLIDER - FIREFOX
-============================================================ */
+/* Firefox */
 
 input[type="range"]::-moz-range-thumb {
 
     width: 13px;
-
     height: 13px;
 
     background: #22d3ee;
@@ -285,8 +279,9 @@ input[type="range"]::-moz-range-thumb {
         left: 15px;
 
         width: auto;
-    }
 
+        max-height: 50vh;
+    }
 
     .info-panel {
 
