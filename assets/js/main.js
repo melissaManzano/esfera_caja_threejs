@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+
 // ============================================================
 // ESCENA
 // ============================================================
 
 const scene = new THREE.Scene();
+
 scene.background = new THREE.Color(0x07111f);
 
 
@@ -40,7 +42,9 @@ renderer.setSize(
     window.innerHeight
 );
 
-document.body.appendChild(renderer.domElement);
+document.body.appendChild(
+    renderer.domElement
+);
 
 
 // ============================================================
@@ -52,32 +56,24 @@ const controls = new OrbitControls(
     renderer.domElement
 );
 
-// Punto alrededor del cual girará la cámara
 controls.target.set(0, 0, 0);
 
-// Permitir rotación
 controls.enableRotate = true;
 
-// Permitir zoom con la rueda del mouse
 controls.enableZoom = true;
 
-// Permitir desplazamiento con clic derecho
 controls.enablePan = true;
 
-// Movimiento más suave
 controls.enableDamping = true;
 
-// Cantidad de suavizado
 controls.dampingFactor = 0.05;
 
-// Distancia mínima de la cámara
 controls.minDistance = 7;
 
-// Distancia máxima de la cámara
 controls.maxDistance = 30;
 
-// Evita que la cámara pueda voltearse completamente
 controls.minPolarAngle = 0.1;
+
 controls.maxPolarAngle = Math.PI - 0.1;
 
 controls.update();
@@ -94,12 +90,17 @@ scene.add(
     )
 );
 
+
 const light = new THREE.DirectionalLight(
     0xffffff,
     3
 );
 
-light.position.set(5, 8, 6);
+light.position.set(
+    5,
+    8,
+    6
+);
 
 scene.add(light);
 
@@ -112,8 +113,13 @@ const boxSize = 10;
 
 const radius = 0.5;
 
+// Límite que puede alcanzar el centro de la esfera
 const limit =
     boxSize / 2 - radius;
+
+// Posición física de las caras
+const wallPosition =
+    boxSize / 2;
 
 
 // ============================================================
@@ -221,6 +227,208 @@ const velocity =
 
 
 // ============================================================
+// MARCAS DE IMPACTO
+// ============================================================
+
+// Aquí se guardan temporalmente
+// todas las marcas visibles.
+const impactMarks = [];
+
+
+// Duración de la marca en milisegundos
+const impactDuration = 800;
+
+
+// ============================================================
+// CREAR UNA MARCA DE IMPACTO
+// ============================================================
+
+function createImpactMark(
+    position,
+    axis
+) {
+
+    // --------------------------------------------------------
+    // GEOMETRÍA
+    // --------------------------------------------------------
+
+    const geometry =
+        new THREE.RingGeometry(
+            0.12,
+            0.38,
+            32
+        );
+
+
+    // --------------------------------------------------------
+    // MATERIAL
+    // --------------------------------------------------------
+
+    const material =
+        new THREE.MeshBasicMaterial({
+
+            color: 0xffd54f,
+
+            transparent: true,
+
+            opacity: 1,
+
+            side: THREE.DoubleSide,
+
+            depthWrite: false
+
+        });
+
+
+    // --------------------------------------------------------
+    // CREAR MARCA
+    // --------------------------------------------------------
+
+    const mark =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
+
+
+    // Colocamos la marca
+    // en el punto exacto del impacto.
+    mark.position.copy(position);
+
+
+    // --------------------------------------------------------
+    // ORIENTACIÓN SEGÚN LA CARA
+    // --------------------------------------------------------
+
+    if (axis === 'x') {
+
+        // Cara izquierda o derecha
+        // El círculo debe quedar en el plano YZ.
+
+        mark.rotation.y =
+            Math.PI / 2;
+
+    }
+
+    else if (axis === 'y') {
+
+        // Cara superior o inferior
+        // El círculo debe quedar en el plano XZ.
+
+        mark.rotation.x =
+            Math.PI / 2;
+
+    }
+
+    // Para Z no necesitamos rotación,
+    // RingGeometry ya está sobre el plano XY.
+
+
+    // --------------------------------------------------------
+    // GUARDAR MOMENTO DE CREACIÓN
+    // --------------------------------------------------------
+
+    mark.userData.createdAt =
+        performance.now();
+
+
+    // --------------------------------------------------------
+    // AGREGAR A LA ESCENA
+    // --------------------------------------------------------
+
+    scene.add(mark);
+
+
+    // Guardamos referencia para
+    // poder eliminarla después.
+    impactMarks.push(mark);
+
+}
+
+
+// ============================================================
+// ACTUALIZAR MARCAS DE IMPACTO
+// ============================================================
+
+function updateImpactMarks() {
+
+    const currentTime =
+        performance.now();
+
+
+    // Recorremos desde el final
+    // para poder eliminar elementos
+    // sin alterar el recorrido.
+    for (
+        let i = impactMarks.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const mark =
+            impactMarks[i];
+
+
+        const elapsedTime =
+            currentTime -
+            mark.userData.createdAt;
+
+
+        // Calculamos cuánto tiempo
+        // de vida le queda.
+        const progress =
+            elapsedTime /
+            impactDuration;
+
+
+        // ----------------------------------------------------
+        // DESVANECIMIENTO
+        // ----------------------------------------------------
+
+        mark.material.opacity =
+            1 - progress;
+
+
+        // También hacemos que crezca ligeramente
+        // mientras desaparece.
+        const scale =
+            1 + progress * 0.7;
+
+        mark.scale.set(
+            scale,
+            scale,
+            scale
+        );
+
+
+        // ----------------------------------------------------
+        // ELIMINAR MARCA
+        // ----------------------------------------------------
+
+        if (
+            elapsedTime >=
+            impactDuration
+        ) {
+
+            scene.remove(mark);
+
+            mark.geometry.dispose();
+
+            mark.material.dispose();
+
+            impactMarks.splice(
+                i,
+                1
+            );
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
 // ANIMACIÓN
 // ============================================================
 
@@ -235,16 +443,49 @@ function animate() {
     );
 
 
-    // --------------------------------------------------------
+    // ========================================================
     // COLISIÓN EN X
-    // --------------------------------------------------------
+    // ========================================================
 
     if (
         sphere.position.x >= limit ||
         sphere.position.x <= -limit
     ) {
 
+        // Determinamos qué pared tocó
+        const side =
+            sphere.position.x > 0
+                ? 1
+                : -1;
+
+
+        // ----------------------------------------------------
+        // CREAR MARCA
+        // ----------------------------------------------------
+
+        createImpactMark(
+
+            new THREE.Vector3(
+
+                side * wallPosition,
+
+                sphere.position.y,
+
+                sphere.position.z
+
+            ),
+
+            'x'
+
+        );
+
+
+        // ----------------------------------------------------
+        // REBOTE
+        // ----------------------------------------------------
+
         velocity.x *= -1;
+
 
         sphere.position.x =
             THREE.MathUtils.clamp(
@@ -256,16 +497,48 @@ function animate() {
     }
 
 
-    // --------------------------------------------------------
+    // ========================================================
     // COLISIÓN EN Y
-    // --------------------------------------------------------
+    // ========================================================
 
     if (
         sphere.position.y >= limit ||
         sphere.position.y <= -limit
     ) {
 
+        const side =
+            sphere.position.y > 0
+                ? 1
+                : -1;
+
+
+        // ----------------------------------------------------
+        // CREAR MARCA
+        // ----------------------------------------------------
+
+        createImpactMark(
+
+            new THREE.Vector3(
+
+                sphere.position.x,
+
+                side * wallPosition,
+
+                sphere.position.z
+
+            ),
+
+            'y'
+
+        );
+
+
+        // ----------------------------------------------------
+        // REBOTE
+        // ----------------------------------------------------
+
         velocity.y *= -1;
+
 
         sphere.position.y =
             THREE.MathUtils.clamp(
@@ -277,16 +550,48 @@ function animate() {
     }
 
 
-    // --------------------------------------------------------
+    // ========================================================
     // COLISIÓN EN Z
-    // --------------------------------------------------------
+    // ========================================================
 
     if (
         sphere.position.z >= limit ||
         sphere.position.z <= -limit
     ) {
 
+        const side =
+            sphere.position.z > 0
+                ? 1
+                : -1;
+
+
+        // ----------------------------------------------------
+        // CREAR MARCA
+        // ----------------------------------------------------
+
+        createImpactMark(
+
+            new THREE.Vector3(
+
+                sphere.position.x,
+
+                sphere.position.y,
+
+                side * wallPosition
+
+            ),
+
+            'z'
+
+        );
+
+
+        // ----------------------------------------------------
+        // REBOTE
+        // ----------------------------------------------------
+
         velocity.z *= -1;
+
 
         sphere.position.z =
             THREE.MathUtils.clamp(
@@ -298,16 +603,23 @@ function animate() {
     }
 
 
-    // --------------------------------------------------------
-    // ACTUALIZAR CONTROLES DE CÁMARA
-    // --------------------------------------------------------
+    // ========================================================
+    // ACTUALIZAR MARCAS
+    // ========================================================
+
+    updateImpactMarks();
+
+
+    // ========================================================
+    // ACTUALIZAR CÁMARA
+    // ========================================================
 
     controls.update();
 
 
-    // --------------------------------------------------------
-    // RENDERIZAR ESCENA
-    // --------------------------------------------------------
+    // ========================================================
+    // RENDER
+    // ========================================================
 
     renderer.render(
         scene,
@@ -317,13 +629,17 @@ function animate() {
 }
 
 
+// ============================================================
+// INICIAR ANIMACIÓN
+// ============================================================
+
 renderer.setAnimationLoop(
     animate
 );
 
 
 // ============================================================
-// AJUSTAR PANTALLA AL CAMBIAR TAMAÑO DE VENTANA
+// AJUSTAR TAMAÑO DE VENTANA
 // ============================================================
 
 window.addEventListener(
@@ -334,7 +650,9 @@ window.addEventListener(
             window.innerWidth /
             window.innerHeight;
 
+
         camera.updateProjectionMatrix();
+
 
         renderer.setSize(
             window.innerWidth,
