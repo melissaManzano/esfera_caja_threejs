@@ -21,18 +21,11 @@ scene.background =
 
 const camera =
     new THREE.PerspectiveCamera(
-
         60,
-
-        window.innerWidth /
-        window.innerHeight,
-
+        window.innerWidth / window.innerHeight,
         0.1,
-
         100
-
     );
-
 
 camera.position.set(
     9,
@@ -47,26 +40,27 @@ camera.position.set(
 
 const renderer =
     new THREE.WebGLRenderer({
-
         antialias: true
-
     });
 
-
 renderer.setPixelRatio(
-
     Math.min(
         window.devicePixelRatio,
         2
     )
-
 );
-
 
 renderer.setSize(
     window.innerWidth,
     window.innerHeight
 );
+
+
+// Activar sombras
+renderer.shadowMap.enabled = true;
+
+renderer.shadowMap.type =
+    THREE.PCFSoftShadowMap;
 
 
 document.body.appendChild(
@@ -80,20 +74,15 @@ document.body.appendChild(
 
 const controls =
     new OrbitControls(
-
         camera,
-
         renderer.domElement
-
     );
-
 
 controls.target.set(
     0,
     0,
     0
 );
-
 
 controls.enableRotate = true;
 
@@ -113,18 +102,23 @@ controls.update();
 
 
 // ============================================================
-// ILUMINACIÓN
+// ILUMINACIÓN AMBIENTAL
 // ============================================================
 
-scene.add(
-
+const ambientLight =
     new THREE.AmbientLight(
         0xffffff,
-        1.4
-    )
+        1.2
+    );
 
+scene.add(
+    ambientLight
 );
 
+
+// ============================================================
+// LUZ DIRECCIONAL
+// ============================================================
 
 const light =
     new THREE.DirectionalLight(
@@ -132,15 +126,36 @@ const light =
         3
     );
 
-
 light.position.set(
     5,
-    8,
+    10,
     6
 );
 
 
-scene.add(light);
+// Activar sombras de esta luz
+light.castShadow = true;
+
+
+// Resolución de las sombras
+light.shadow.mapSize.width = 2048;
+
+light.shadow.mapSize.height = 2048;
+
+
+// Área cubierta por las sombras
+light.shadow.camera.left = -12;
+
+light.shadow.camera.right = 12;
+
+light.shadow.camera.top = 12;
+
+light.shadow.camera.bottom = -12;
+
+
+scene.add(
+    light
+);
 
 
 // ============================================================
@@ -151,9 +166,14 @@ const boxSize = 10;
 
 const sphereRadius = 0.5;
 
+
+// Posición física de las paredes
 const wallPosition =
     boxSize / 2;
 
+
+// Límite para el centro
+// de las esferas
 const limit =
     wallPosition -
     sphereRadius;
@@ -186,7 +206,8 @@ const glassMaterial =
 
         metalness: 0,
 
-        side: THREE.DoubleSide,
+        side:
+            THREE.DoubleSide,
 
         depthWrite: false
 
@@ -206,7 +227,7 @@ scene.add(
 
 
 // ============================================================
-// BORDES
+// BORDES DE LA CAJA
 // ============================================================
 
 const edges =
@@ -217,9 +238,7 @@ const edges =
         ),
 
         new THREE.LineBasicMaterial({
-
             color: 0xbfe8ff
-
         })
 
     );
@@ -231,24 +250,196 @@ scene.add(
 
 
 // ============================================================
-// COLORES
+// PLANO TIPO ALFOMBRA
 // ============================================================
 
+// El plano será más grande que la caja.
+const carpetSize = 17;
+
+
+// ============================================================
+// GEOMETRÍA DE LA ALFOMBRA
+// ============================================================
+
+// Utilizamos bastantes segmentos porque
+// vamos a modificar ligeramente sus vértices.
+const carpetGeometry =
+    new THREE.PlaneGeometry(
+        carpetSize,
+        carpetSize,
+        100,
+        100
+    );
+
+
+// ============================================================
+// TEXTURA PROCEDURAL
+// ============================================================
+
+// Obtenemos las posiciones de los vértices
+// del plano.
+const carpetPositions =
+    carpetGeometry.attributes.position;
+
+
+// Recorremos todos los vértices.
+for (
+    let i = 0;
+    i < carpetPositions.count;
+    i++
+) {
+
+    const x =
+        carpetPositions.getX(i);
+
+    const y =
+        carpetPositions.getY(i);
+
+
+    // --------------------------------------------------------
+    // ONDAS PEQUEÑAS
+    // --------------------------------------------------------
+
+    // Primera variación
+    const wave1 =
+        Math.sin(
+            x * 5
+        ) * 0.018;
+
+
+    // Segunda variación
+    const wave2 =
+        Math.cos(
+            y * 6
+        ) * 0.015;
+
+
+    // Variación diagonal
+    const wave3 =
+        Math.sin(
+            (x + y) * 9
+        ) * 0.009;
+
+
+    // --------------------------------------------------------
+    // IRREGULARIDAD ADICIONAL
+    // --------------------------------------------------------
+
+    // Una pequeña variación utilizando
+    // diferentes frecuencias.
+    const detail =
+        Math.sin(
+            x * 13 +
+            y * 11
+        ) * 0.005;
+
+
+    // --------------------------------------------------------
+    // ALTURA FINAL
+    // --------------------------------------------------------
+
+    const height =
+        wave1 +
+        wave2 +
+        wave3 +
+        detail;
+
+
+    carpetPositions.setZ(
+        i,
+        height
+    );
+
+}
+
+
+// Indicamos a Three.js que
+// modificamos los vértices.
+carpetPositions.needsUpdate =
+    true;
+
+
+// Recalculamos las normales para que
+// las irregularidades reaccionen
+// correctamente a la iluminación.
+carpetGeometry.computeVertexNormals();
+
+
+// ============================================================
+// MATERIAL DE LA ALFOMBRA
+// ============================================================
+
+const carpetMaterial =
+    new THREE.MeshStandardMaterial({
+
+        // Rosa mate
+        color: 0xd989a7,
+
+        // Muy poca reflexión
+        roughness: 0.97,
+
+        // No es metálico
+        metalness: 0,
+
+        side:
+            THREE.DoubleSide
+
+    });
+
+
+// ============================================================
+// CREAR ALFOMBRA
+// ============================================================
+
+const carpet =
+    new THREE.Mesh(
+        carpetGeometry,
+        carpetMaterial
+    );
+
+
+// PlaneGeometry originalmente está
+// orientado hacia el eje Z.
+// Lo colocamos horizontal.
+carpet.rotation.x =
+    -Math.PI / 2;
+
+
+// Colocar debajo de la caja.
+carpet.position.y =
+    -boxSize / 2 -
+    0.08;
+
+
+// Recibir sombras
+carpet.receiveShadow = true;
+
+
+scene.add(
+    carpet
+);
+
+
+// ============================================================
+// COLORES DE LAS ESFERAS
+// ============================================================
+
+// Color normal
 const normalColor =
     new THREE.Color(
         0xff7043
     );
 
 
+// Color cuando ocurre una colisión
 const collisionColor =
     new THREE.Color(
         0xffff00
     );
 
 
-// Tiempo que permanecerá
-// el cambio de color.
-
+// Tiempo durante el cual
+// permanece el color de colisión.
 const collisionColorDuration =
     180;
 
@@ -260,9 +451,8 @@ const collisionColorDuration =
 const spheres = [];
 
 
-// Geometría compartida por todas
-// las esferas.
-
+// Geometría compartida
+// entre todas las esferas.
 const sphereGeometry =
     new THREE.SphereGeometry(
         sphereRadius,
@@ -283,7 +473,7 @@ let speedZValue = 0.041;
 
 
 // ============================================================
-// GENERAR DIRECCIÓN ALEATORIA
+// GENERAR SIGNO ALEATORIO
 // ============================================================
 
 function randomSign() {
@@ -296,14 +486,16 @@ function randomSign() {
 
 
 // ============================================================
-// COMPROBAR POSICIÓN DISPONIBLE
+// COMPROBAR SI UNA POSICIÓN ESTÁ DISPONIBLE
 // ============================================================
 
 function positionIsAvailable(
     position
 ) {
 
-    for (const sphere of spheres) {
+    for (
+        const sphere of spheres
+    ) {
 
         const distance =
             position.distanceTo(
@@ -329,7 +521,7 @@ function positionIsAvailable(
 
 
 // ============================================================
-// GENERAR POSICIÓN ALEATORIA
+// CREAR POSICIÓN ALEATORIA
 // ============================================================
 
 function createRandomPosition() {
@@ -369,7 +561,11 @@ function createRandomPosition() {
 
     while (
 
-        !positionIsAvailable(position) &&
+        !positionIsAvailable(
+            position
+        )
+
+        &&
 
         attempts < 100
 
@@ -387,6 +583,10 @@ function createRandomPosition() {
 
 function createSphere() {
 
+    // --------------------------------------------------------
+    // MATERIAL
+    // --------------------------------------------------------
+
     const material =
         new THREE.MeshStandardMaterial({
 
@@ -399,25 +599,39 @@ function createSphere() {
         });
 
 
+    // --------------------------------------------------------
+    // MESH
+    // --------------------------------------------------------
+
     const mesh =
         new THREE.Mesh(
-
             sphereGeometry,
-
             material
-
         );
 
 
+    // Posición aleatoria
     mesh.position.copy(
         createRandomPosition()
     );
+
+
+    // La esfera genera sombra
+    mesh.castShadow = true;
+
+
+    // También puede recibir sombra
+    mesh.receiveShadow = true;
 
 
     scene.add(
         mesh
     );
 
+
+    // --------------------------------------------------------
+    // OBJETO DE DATOS
+    // --------------------------------------------------------
 
     const sphereObject = {
 
@@ -486,8 +700,10 @@ function setSphereCount(
     amount
 ) {
 
+    // Agregar
     while (
-        spheres.length < amount
+        spheres.length <
+        amount
     ) {
 
         createSphere();
@@ -495,8 +711,10 @@ function setSphereCount(
     }
 
 
+    // Eliminar
     while (
-        spheres.length > amount
+        spheres.length >
+        amount
     ) {
 
         removeSphere();
@@ -507,7 +725,7 @@ function setSphereCount(
 
 
 // ============================================================
-// MOSTRAR COLISIÓN MEDIANTE COLOR
+// MOSTRAR COLISIÓN
 // ============================================================
 
 function showCollision(
@@ -569,7 +787,7 @@ const impactDuration =
 
 
 // ============================================================
-// CREAR MARCA
+// CREAR MARCA DE IMPACTO
 // ============================================================
 
 function createImpactMark(
@@ -588,16 +806,20 @@ function createImpactMark(
     const material =
         new THREE.MeshBasicMaterial({
 
-            color: 0xffd54f,
+            color:
+                0xffd54f,
 
-            transparent: true,
+            transparent:
+                true,
 
-            opacity: 1,
+            opacity:
+                1,
 
             side:
                 THREE.DoubleSide,
 
-            depthWrite: false
+            depthWrite:
+                false
 
         });
 
@@ -613,6 +835,10 @@ function createImpactMark(
         position
     );
 
+
+    // --------------------------------------------------------
+    // ORIENTACIÓN SEGÚN LA CARA
+    // --------------------------------------------------------
 
     if (
         axis === 'x'
@@ -685,6 +911,10 @@ function updateImpactMarks() {
             impactDuration;
 
 
+        // ----------------------------------------------------
+        // DESVANECER
+        // ----------------------------------------------------
+
         mark.material.opacity =
             Math.max(
                 0,
@@ -692,9 +922,14 @@ function updateImpactMarks() {
             );
 
 
+        // ----------------------------------------------------
+        // EXPANDIR
+        // ----------------------------------------------------
+
         const scale =
             1 +
-            progress * 0.7;
+            progress *
+            0.7;
 
 
         mark.scale.set(
@@ -703,6 +938,10 @@ function updateImpactMarks() {
             scale
         );
 
+
+        // ----------------------------------------------------
+        // ELIMINAR
+        // ----------------------------------------------------
 
         if (
             elapsed >=
@@ -715,6 +954,7 @@ function updateImpactMarks() {
 
 
             mark.geometry.dispose();
+
 
             mark.material.dispose();
 
@@ -732,7 +972,7 @@ function updateImpactMarks() {
 
 
 // ============================================================
-// COLISIONES CON PAREDES
+// COLISIONES CONTRA LAS PAREDES
 // ============================================================
 
 function checkWallCollisions(
@@ -748,7 +988,7 @@ function checkWallCollisions(
 
 
     // ========================================================
-    // X
+    // PARED X
     // ========================================================
 
     if (
@@ -763,7 +1003,8 @@ function checkWallCollisions(
 
 
         position.x =
-            side * limit;
+            side *
+            limit;
 
 
         velocity.x *= -1;
@@ -795,7 +1036,7 @@ function checkWallCollisions(
 
 
     // ========================================================
-    // Y
+    // PARED Y
     // ========================================================
 
     if (
@@ -810,7 +1051,8 @@ function checkWallCollisions(
 
 
         position.y =
-            side * limit;
+            side *
+            limit;
 
 
         velocity.y *= -1;
@@ -842,7 +1084,7 @@ function checkWallCollisions(
 
 
     // ========================================================
-    // Z
+    // PARED Z
     // ========================================================
 
     if (
@@ -857,7 +1099,8 @@ function checkWallCollisions(
 
 
         position.z =
-            side * limit;
+            side *
+            limit;
 
 
         velocity.z *= -1;
@@ -900,9 +1143,8 @@ function checkSphereCollisions() {
         sphereRadius * 2;
 
 
-    // Comparar cada esfera
-    // con todas las posteriores.
-
+    // Recorremos cada pareja
+    // de esferas solamente una vez.
     for (
         let i = 0;
         i < spheres.length;
@@ -931,9 +1173,7 @@ function checkSphereCollisions() {
                 sphereB.mesh.position;
 
 
-            // Vector que va de
-            // A hacia B.
-
+            // Vector de A hacia B
             const difference =
                 new THREE.Vector3()
                     .subVectors(
@@ -947,15 +1187,17 @@ function checkSphereCollisions() {
 
 
             // =================================================
-            // EXISTE COLISIÓN
+            // DETECTAR COLISIÓN
             // =================================================
 
             if (
                 distance <
-                minimumDistance &&
+                minimumDistance
+                &&
                 distance > 0
             ) {
 
+                // Dirección de la colisión
                 const normal =
                     difference
                         .clone()
@@ -963,7 +1205,7 @@ function checkSphereCollisions() {
 
 
                 // =============================================
-                // SEPARAR ESFERAS
+                // SEPARAR LAS ESFERAS
                 // =============================================
 
                 const overlap =
@@ -1013,9 +1255,8 @@ function checkSphereCollisions() {
                     );
 
 
-                // Si ya se están alejando,
-                // no volvemos a aplicar impulso.
-
+                // Si ya se están alejando
+                // no aplicamos otro impulso.
                 if (
                     velocityAlongNormal >= 0
                 ) {
@@ -1029,17 +1270,18 @@ function checkSphereCollisions() {
                 // COLISIÓN ELÁSTICA
                 // =============================================
 
-                // Las dos esferas tienen
-                // la misma masa.
-
                 const restitution = 1;
 
 
                 const impulseMagnitude =
 
-                    -(1 + restitution) *
+                    -(1 + restitution)
 
-                    velocityAlongNormal /
+                    *
+
+                    velocityAlongNormal
+
+                    /
 
                     2;
 
@@ -1052,19 +1294,24 @@ function checkSphereCollisions() {
                         );
 
 
-                sphereA.velocity.addScaledVector(
-                    impulse,
-                    -1
-                );
+                sphereA.velocity
+                    .addScaledVector(
+
+                        impulse,
+
+                        -1
+
+                    );
 
 
-                sphereB.velocity.add(
-                    impulse
-                );
+                sphereB.velocity
+                    .add(
+                        impulse
+                    );
 
 
                 // =============================================
-                // COLOR DE COLISIÓN
+                // CAMBIO DE COLOR
                 // =============================================
 
                 showCollision(
@@ -1138,7 +1385,7 @@ const speedZText =
 
 
 // ============================================================
-// CONTROL CANTIDAD
+// CONTROL DE CANTIDAD DE ESFERAS
 // ============================================================
 
 sphereCountControl.addEventListener(
@@ -1167,7 +1414,7 @@ sphereCountControl.addEventListener(
 
 
 // ============================================================
-// MODIFICAR VELOCIDAD POR EJE
+// CAMBIAR VELOCIDAD DE UN EJE
 // ============================================================
 
 function changeAxisSpeed(
@@ -1180,19 +1427,22 @@ function changeAxisSpeed(
     ) {
 
         const current =
-            sphere.velocity[axis];
+            sphere.velocity[
+                axis
+            ];
 
 
-        // Mantener la dirección
-        // actual de cada esfera.
-
+        // Conservar la dirección
+        // actual de movimiento.
         const direction =
             current < 0
                 ? -1
                 : 1;
 
 
-        sphere.velocity[axis] =
+        sphere.velocity[
+            axis
+        ] =
             value *
             direction;
 
@@ -1202,7 +1452,7 @@ function changeAxisSpeed(
 
 
 // ============================================================
-// VELOCIDAD X
+// CONTROL VELOCIDAD X
 // ============================================================
 
 speedXControl.addEventListener(
@@ -1232,7 +1482,7 @@ speedXControl.addEventListener(
 
 
 // ============================================================
-// VELOCIDAD Y
+// CONTROL VELOCIDAD Y
 // ============================================================
 
 speedYControl.addEventListener(
@@ -1262,7 +1512,7 @@ speedYControl.addEventListener(
 
 
 // ============================================================
-// VELOCIDAD Z
+// CONTROL VELOCIDAD Z
 // ============================================================
 
 speedZControl.addEventListener(
@@ -1296,9 +1546,11 @@ speedZControl.addEventListener(
 // ============================================================
 
 setSphereCount(
+
     parseInt(
         sphereCountControl.value
     )
+
 );
 
 
@@ -1337,21 +1589,21 @@ function animate() {
 
 
     // ========================================================
-    // COLORES
+    // ACTUALIZAR COLORES
     // ========================================================
 
     updateCollisionColors();
 
 
     // ========================================================
-    // MARCAS
+    // ACTUALIZAR MARCAS
     // ========================================================
 
     updateImpactMarks();
 
 
     // ========================================================
-    // CÁMARA
+    // ACTUALIZAR CÁMARA
     // ========================================================
 
     controls.update();
@@ -1370,7 +1622,7 @@ function animate() {
 
 
 // ============================================================
-// INICIAR
+// INICIAR ANIMACIÓN
 // ============================================================
 
 renderer.setAnimationLoop(
@@ -1379,7 +1631,7 @@ renderer.setAnimationLoop(
 
 
 // ============================================================
-// RESPONSIVE
+// CAMBIO DE TAMAÑO DE VENTANA
 // ============================================================
 
 window.addEventListener(
@@ -1390,7 +1642,9 @@ window.addEventListener(
 
         camera.aspect =
 
-            window.innerWidth /
+            window.innerWidth
+
+            /
 
             window.innerHeight;
 
@@ -1399,11 +1653,8 @@ window.addEventListener(
 
 
         renderer.setSize(
-
             window.innerWidth,
-
             window.innerHeight
-
         );
 
     }
