@@ -3,26 +3,178 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Práctica 1.2 | Esfera rebotando en una caja de cristal</title>
-    <link rel="stylesheet" href="./assets/css/styles.css">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Práctica 1.2 | Esfera rebotando en una caja de cristal
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="./assets/css/styles.css"
+    >
 
     <script type="importmap">
- {
-   "imports": {
-     "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-   }
- }
- </script>
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+        }
+    }
+    </script>
 </head>
 
 <body>
-    <header class="panel">
-        <h1>Esfera rebotando en una caja de cristal</h1>
-        <p>Three.js: movimiento 3D, vectores y colisiones con límites.</p>
+
+    <!-- ====================================================== -->
+    <!-- INFORMACIÓN DE LA PRÁCTICA -->
+    <!-- ====================================================== -->
+
+    <header class="panel info-panel">
+
+        <h1>
+            Esfera rebotando en una caja de cristal
+        </h1>
+
+        <p>
+            Three.js: movimiento 3D, vectores y colisiones con límites.
+        </p>
+
     </header>
-    <script type="module" src="./assets/js/main.js"></script>
+
+
+    <!-- ====================================================== -->
+    <!-- PANEL DE CONTROLES -->
+    <!-- ====================================================== -->
+
+    <aside class="controls-panel">
+
+        <div class="controls-header">
+
+            <h2>
+                Controles
+            </h2>
+
+            <p>
+                Personaliza la simulación
+            </p>
+
+        </div>
+
+
+        <!-- VELOCIDAD -->
+
+        <section class="control-section">
+
+            <h3>
+                Velocidad de la esfera
+            </h3>
+
+
+            <!-- EJE X -->
+
+            <div class="control-group">
+
+                <div class="control-label">
+
+                    <label for="speedX">
+                        Velocidad X
+                    </label>
+
+                    <span id="speedXValue">
+                        0.035
+                    </span>
+
+                </div>
+
+
+                <input
+                    type="range"
+                    id="speedX"
+                    min="-0.10"
+                    max="0.10"
+                    step="0.001"
+                    value="0.035"
+                >
+
+            </div>
+
+
+            <!-- EJE Y -->
+
+            <div class="control-group">
+
+                <div class="control-label">
+
+                    <label for="speedY">
+                        Velocidad Y
+                    </label>
+
+                    <span id="speedYValue">
+                        0.027
+                    </span>
+
+                </div>
+
+
+                <input
+                    type="range"
+                    id="speedY"
+                    min="-0.10"
+                    max="0.10"
+                    step="0.001"
+                    value="0.027"
+                >
+
+            </div>
+
+
+            <!-- EJE Z -->
+
+            <div class="control-group">
+
+                <div class="control-label">
+
+                    <label for="speedZ">
+                        Velocidad Z
+                    </label>
+
+                    <span id="speedZValue">
+                        0.041
+                    </span>
+
+                </div>
+
+
+                <input
+                    type="range"
+                    id="speedZ"
+                    min="-0.10"
+                    max="0.10"
+                    step="0.001"
+                    value="0.041"
+                >
+
+            </div>
+
+        </section>
+
+    </aside>
+
+
+    <!-- ====================================================== -->
+    <!-- THREE.JS -->
+    <!-- ====================================================== -->
+
+    <script
+        type="module"
+        src="./assets/js/main.js"
+    ></script>
+
 </body>
 
 </html>
