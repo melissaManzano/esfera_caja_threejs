@@ -4,6 +4,10 @@ import {
     OrbitControls
 } from 'three/addons/controls/OrbitControls.js';
 
+import {
+    RoomEnvironment
+} from 'three/addons/environments/RoomEnvironment.js';
+
 
 // ============================================================
 // ESCENA
@@ -11,8 +15,21 @@ import {
 
 const scene = new THREE.Scene();
 
+
+// Fondo oscuro cálido
 scene.background =
-    new THREE.Color(0x07111f);
+    new THREE.Color(
+        0x120f16
+    );
+
+
+// Niebla ligera
+scene.fog =
+    new THREE.Fog(
+        0x120f16,
+        18,
+        40
+    );
 
 
 // ============================================================
@@ -27,10 +44,11 @@ const camera =
         100
     );
 
+
 camera.position.set(
-    9,
-    7,
-    12
+    10,
+    8,
+    13
 );
 
 
@@ -43,6 +61,7 @@ const renderer =
         antialias: true
     });
 
+
 renderer.setPixelRatio(
     Math.min(
         window.devicePixelRatio,
@@ -50,22 +69,65 @@ renderer.setPixelRatio(
     )
 );
 
+
 renderer.setSize(
     window.innerWidth,
     window.innerHeight
 );
 
 
-// Activar sombras
-renderer.shadowMap.enabled = true;
+// Sombras
+renderer.shadowMap.enabled =
+    true;
+
 
 renderer.shadowMap.type =
     THREE.PCFSoftShadowMap;
 
 
+// Tone Mapping
+renderer.toneMapping =
+    THREE.ACESFilmicToneMapping;
+
+
+// Exposición baja para resaltar el foco
+renderer.toneMappingExposure =
+    0.72;
+
+
 document.body.appendChild(
     renderer.domElement
 );
+
+
+// ============================================================
+// ENTORNO PROCEDURAL PARA EL CRISTAL
+// ============================================================
+
+const pmremGenerator =
+    new THREE.PMREMGenerator(
+        renderer
+    );
+
+
+const roomEnvironment =
+    new RoomEnvironment();
+
+
+const environmentTexture =
+    pmremGenerator.fromScene(
+        roomEnvironment,
+        0.04
+    ).texture;
+
+
+scene.environment =
+    environmentTexture;
+
+
+roomEnvironment.dispose();
+
+pmremGenerator.dispose();
 
 
 // ============================================================
@@ -78,38 +140,44 @@ const controls =
         renderer.domElement
     );
 
+
 controls.target.set(
     0,
     0,
     0
 );
 
-controls.enableRotate = true;
 
-controls.enableZoom = true;
+controls.enableDamping =
+    true;
 
-controls.enablePan = true;
 
-controls.enableDamping = true;
+controls.dampingFactor =
+    0.05;
 
-controls.dampingFactor = 0.05;
 
-controls.minDistance = 7;
+controls.minDistance =
+    8;
 
-controls.maxDistance = 30;
+
+controls.maxDistance =
+    30;
+
 
 controls.update();
 
 
 // ============================================================
-// ILUMINACIÓN AMBIENTAL
+// ILUMINACIÓN GENERAL
 // ============================================================
 
+// Luz ambiental muy tenue
 const ambientLight =
     new THREE.AmbientLight(
-        0xffffff,
-        1.2
+        0xffe9f1,
+        0.08
     );
+
 
 scene.add(
     ambientLight
@@ -117,63 +185,44 @@ scene.add(
 
 
 // ============================================================
-// LUZ DIRECCIONAL
+// LUZ SECUNDARIA
 // ============================================================
 
-const light =
+const secondaryLight =
     new THREE.DirectionalLight(
-        0xffffff,
-        3
+        0xd9c9ff,
+        0.18
     );
 
-light.position.set(
-    5,
-    10,
+
+secondaryLight.position.set(
+    -8,
+    12,
     6
 );
 
 
-// Activar sombras de esta luz
-light.castShadow = true;
-
-
-// Resolución de las sombras
-light.shadow.mapSize.width = 2048;
-
-light.shadow.mapSize.height = 2048;
-
-
-// Área cubierta por las sombras
-light.shadow.camera.left = -12;
-
-light.shadow.camera.right = 12;
-
-light.shadow.camera.top = 12;
-
-light.shadow.camera.bottom = -12;
-
-
 scene.add(
-    light
+    secondaryLight
 );
 
 
 // ============================================================
-// CONFIGURACIÓN DE LA CAJA
+// CONFIGURACIÓN GENERAL
 // ============================================================
 
-const boxSize = 10;
+const boxSize =
+    10;
 
-const sphereRadius = 0.5;
+
+const sphereRadius =
+    0.5;
 
 
-// Posición física de las paredes
 const wallPosition =
     boxSize / 2;
 
 
-// Límite para el centro
-// de las esferas
 const limit =
     wallPosition -
     sphereRadius;
@@ -194,22 +243,49 @@ const boxGeometry =
 const glassMaterial =
     new THREE.MeshPhysicalMaterial({
 
-        color: 0x8fd3ff,
+        color:
+            0xdcefff,
 
-        transparent: true,
+        transmission:
+            1,
 
-        opacity: 0.18,
+        transparent:
+            true,
 
-        transmission: 0.9,
+        opacity:
+            0.18,
 
-        roughness: 0.05,
+        roughness:
+            0.04,
 
-        metalness: 0,
+        metalness:
+            0,
+
+        ior:
+            1.5,
+
+        thickness:
+            0.45,
+
+        attenuationColor:
+            new THREE.Color(
+                0xaedcff
+            ),
+
+        attenuationDistance:
+            5,
+
+        clearcoat:
+            0.35,
+
+        clearcoatRoughness:
+            0.05,
 
         side:
             THREE.DoubleSide,
 
-        depthWrite: false
+        depthWrite:
+            false
 
     });
 
@@ -227,42 +303,13 @@ scene.add(
 
 
 // ============================================================
-// BORDES DE LA CAJA
+// ALFOMBRA
 // ============================================================
 
-const edges =
-    new THREE.LineSegments(
-
-        new THREE.EdgesGeometry(
-            boxGeometry
-        ),
-
-        new THREE.LineBasicMaterial({
-            color: 0xbfe8ff
-        })
-
-    );
+const carpetSize =
+    18;
 
 
-scene.add(
-    edges
-);
-
-
-// ============================================================
-// PLANO TIPO ALFOMBRA
-// ============================================================
-
-// El plano será más grande que la caja.
-const carpetSize = 17;
-
-
-// ============================================================
-// GEOMETRÍA DE LA ALFOMBRA
-// ============================================================
-
-// Utilizamos bastantes segmentos porque
-// vamos a modificar ligeramente sus vértices.
 const carpetGeometry =
     new THREE.PlaneGeometry(
         carpetSize,
@@ -272,17 +319,14 @@ const carpetGeometry =
     );
 
 
-// ============================================================
-// TEXTURA PROCEDURAL
-// ============================================================
-
-// Obtenemos las posiciones de los vértices
-// del plano.
 const carpetPositions =
     carpetGeometry.attributes.position;
 
 
-// Recorremos todos los vértices.
+// ============================================================
+// RELIEVE PROCEDURAL DE LA ALFOMBRA
+// ============================================================
+
 for (
     let i = 0;
     i < carpetPositions.count;
@@ -292,41 +336,29 @@ for (
     const x =
         carpetPositions.getX(i);
 
+
     const y =
         carpetPositions.getY(i);
 
 
-    // --------------------------------------------------------
-    // ONDAS PEQUEÑAS
-    // --------------------------------------------------------
-
-    // Primera variación
     const wave1 =
         Math.sin(
             x * 5
         ) * 0.018;
 
 
-    // Segunda variación
     const wave2 =
         Math.cos(
             y * 6
         ) * 0.015;
 
 
-    // Variación diagonal
     const wave3 =
         Math.sin(
             (x + y) * 9
         ) * 0.009;
 
 
-    // --------------------------------------------------------
-    // IRREGULARIDAD ADICIONAL
-    // --------------------------------------------------------
-
-    // Una pequeña variación utilizando
-    // diferentes frecuencias.
     const detail =
         Math.sin(
             x * 13 +
@@ -334,34 +366,24 @@ for (
         ) * 0.005;
 
 
-    // --------------------------------------------------------
-    // ALTURA FINAL
-    // --------------------------------------------------------
+    carpetPositions.setZ(
 
-    const height =
+        i,
+
         wave1 +
         wave2 +
         wave3 +
-        detail;
+        detail
 
-
-    carpetPositions.setZ(
-        i,
-        height
     );
 
 }
 
 
-// Indicamos a Three.js que
-// modificamos los vértices.
 carpetPositions.needsUpdate =
     true;
 
 
-// Recalculamos las normales para que
-// las irregularidades reaccionen
-// correctamente a la iluminación.
 carpetGeometry.computeVertexNormals();
 
 
@@ -372,24 +394,17 @@ carpetGeometry.computeVertexNormals();
 const carpetMaterial =
     new THREE.MeshStandardMaterial({
 
-        // Rosa mate
-        color: 0xd989a7,
+        color:
+            0xc26789,
 
-        // Muy poca reflexión
-        roughness: 0.97,
+        roughness:
+            1,
 
-        // No es metálico
-        metalness: 0,
-
-        side:
-            THREE.DoubleSide
+        metalness:
+            0
 
     });
 
-
-// ============================================================
-// CREAR ALFOMBRA
-// ============================================================
 
 const carpet =
     new THREE.Mesh(
@@ -398,21 +413,17 @@ const carpet =
     );
 
 
-// PlaneGeometry originalmente está
-// orientado hacia el eje Z.
-// Lo colocamos horizontal.
 carpet.rotation.x =
     -Math.PI / 2;
 
 
-// Colocar debajo de la caja.
 carpet.position.y =
     -boxSize / 2 -
-    0.08;
+    0.1;
 
 
-// Recibir sombras
-carpet.receiveShadow = true;
+carpet.receiveShadow =
+    true;
 
 
 scene.add(
@@ -421,59 +432,577 @@ scene.add(
 
 
 // ============================================================
+// FOCO DIRECCIONAL
+// ============================================================
+
+const spotLight =
+    new THREE.SpotLight(
+
+        0xff5fa2,
+
+        350,
+
+        30,
+
+        THREE.MathUtils.degToRad(
+            28
+        ),
+
+        0.35,
+
+        1.5
+
+    );
+
+
+spotLight.position.set(
+    0,
+    boxSize / 2 + 3,
+    0
+);
+
+
+spotLight.castShadow =
+    true;
+
+
+spotLight.shadow.mapSize.width =
+    2048;
+
+
+spotLight.shadow.mapSize.height =
+    2048;
+
+
+spotLight.shadow.camera.near =
+    0.5;
+
+
+spotLight.shadow.camera.far =
+    40;
+
+
+// ============================================================
+// OBJETIVO DEL FOCO
+// ============================================================
+
+// Aunque ya no mostramos líneas,
+// el SpotLight necesita un objetivo
+// para saber hacia dónde iluminar.
+
+const lightTarget =
+    new THREE.Object3D();
+
+
+lightTarget.position.set(
+    0,
+    0,
+    0
+);
+
+
+scene.add(
+    lightTarget
+);
+
+
+spotLight.target =
+    lightTarget;
+
+
+scene.add(
+    spotLight
+);
+
+
+// ============================================================
+// REPRESENTACIÓN VISUAL DEL FOCO
+// ============================================================
+
+const lampGroup =
+    new THREE.Group();
+
+
+// ============================================================
+// CUERPO DEL FOCO
+// ============================================================
+
+const lampBody =
+    new THREE.Mesh(
+
+        new THREE.CylinderGeometry(
+            0.3,
+            0.22,
+            0.45,
+            32
+        ),
+
+        new THREE.MeshStandardMaterial({
+
+            color:
+                0x2c2530,
+
+            roughness:
+                0.35,
+
+            metalness:
+                0.65
+
+        })
+
+    );
+
+
+lampBody.rotation.x =
+    Math.PI / 2;
+
+
+lampGroup.add(
+    lampBody
+);
+
+
+// ============================================================
+// BOMBILLA
+// ============================================================
+
+const bulb =
+    new THREE.Mesh(
+
+        new THREE.SphereGeometry(
+            0.18,
+            32,
+            32
+        ),
+
+        new THREE.MeshStandardMaterial({
+
+            color:
+                0xffffff,
+
+            emissive:
+                0xff4f9a,
+
+            emissiveIntensity:
+                8,
+
+            roughness:
+                0.1
+
+        })
+
+    );
+
+
+bulb.position.y =
+    -0.25;
+
+
+lampGroup.add(
+    bulb
+);
+
+
+// ============================================================
+// HALO DEL FOCO
+// ============================================================
+
+const halo =
+    new THREE.Mesh(
+
+        new THREE.SphereGeometry(
+            0.36,
+            32,
+            32
+        ),
+
+        new THREE.MeshBasicMaterial({
+
+            color:
+                0xff75ad,
+
+            transparent:
+                true,
+
+            opacity:
+                0.18,
+
+            depthWrite:
+                false
+
+        })
+
+    );
+
+
+halo.position.copy(
+    bulb.position
+);
+
+
+lampGroup.add(
+    halo
+);
+
+
+lampGroup.position.copy(
+    spotLight.position
+);
+
+
+scene.add(
+    lampGroup
+);
+
+
+// ============================================================
+// CONTROL DEL FOCO CON EL MOUSE
+// ============================================================
+
+const raycaster =
+    new THREE.Raycaster();
+
+
+const mouse =
+    new THREE.Vector2();
+
+
+let draggingLight =
+    false;
+
+
+// ============================================================
+// ALTURA DEL FOCO
+// ============================================================
+
+const lightHeight =
+    boxSize / 2 + 3;
+
+
+// ============================================================
+// PLANO INVISIBLE DE MOVIMIENTO
+// ============================================================
+
+// El foco solamente se puede mover
+// horizontalmente sobre la caja.
+
+const movementPlane =
+    new THREE.Plane(
+
+        new THREE.Vector3(
+            0,
+            1,
+            0
+        ),
+
+        -lightHeight
+
+    );
+
+
+const intersectionPoint =
+    new THREE.Vector3();
+
+
+// ============================================================
+// ACTUALIZAR POSICIÓN DEL MOUSE
+// ============================================================
+
+function updateMouse(
+    event
+) {
+
+    mouse.x =
+        (
+            event.clientX /
+            window.innerWidth
+        ) * 2 - 1;
+
+
+    mouse.y =
+        -(
+            event.clientY /
+            window.innerHeight
+        ) * 2 + 1;
+
+}
+
+
+// ============================================================
+// INICIAR ARRASTRE DEL FOCO
+// ============================================================
+
+renderer.domElement.addEventListener(
+    'pointerdown',
+    (event) => {
+
+        updateMouse(
+            event
+        );
+
+
+        raycaster.setFromCamera(
+            mouse,
+            camera
+        );
+
+
+        // Comprobar si hicimos clic
+        // sobre el foco.
+        const intersections =
+            raycaster.intersectObject(
+                lampGroup,
+                true
+            );
+
+
+        if (
+            intersections.length > 0
+        ) {
+
+            draggingLight =
+                true;
+
+
+            // Desactivar OrbitControls
+            // mientras movemos el foco.
+            controls.enabled =
+                false;
+
+
+            renderer.domElement.style.cursor =
+                'grabbing';
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// MOVER FOCO
+// ============================================================
+
+renderer.domElement.addEventListener(
+    'pointermove',
+    (event) => {
+
+        updateMouse(
+            event
+        );
+
+
+        // ====================================================
+        // DETECTAR SI EL CURSOR ESTÁ SOBRE EL FOCO
+        // ====================================================
+
+        if (
+            !draggingLight
+        ) {
+
+            raycaster.setFromCamera(
+                mouse,
+                camera
+            );
+
+
+            const intersections =
+                raycaster.intersectObject(
+                    lampGroup,
+                    true
+                );
+
+
+            if (
+                intersections.length > 0
+            ) {
+
+                renderer.domElement.style.cursor =
+                    'grab';
+
+            }
+
+            else {
+
+                renderer.domElement.style.cursor =
+                    'default';
+
+            }
+
+        }
+
+
+        // Si no estamos arrastrando,
+        // no modificamos la posición.
+        if (
+            !draggingLight
+        ) {
+
+            return;
+
+        }
+
+
+        raycaster.setFromCamera(
+            mouse,
+            camera
+        );
+
+
+        const hit =
+            raycaster.ray.intersectPlane(
+                movementPlane,
+                intersectionPoint
+            );
+
+
+        if (
+            !hit
+        ) {
+
+            return;
+
+        }
+
+
+        // ====================================================
+        // LIMITAR MOVIMIENTO
+        // ====================================================
+
+        const maxMovement =
+            boxSize / 2;
+
+
+        const newX =
+            THREE.MathUtils.clamp(
+
+                intersectionPoint.x,
+
+                -maxMovement,
+
+                maxMovement
+
+            );
+
+
+        const newZ =
+            THREE.MathUtils.clamp(
+
+                intersectionPoint.z,
+
+                -maxMovement,
+
+                maxMovement
+
+            );
+
+
+        // ====================================================
+        // MOVER EL SPOTLIGHT
+        // ====================================================
+
+        spotLight.position.set(
+            newX,
+            lightHeight,
+            newZ
+        );
+
+
+        // Mover también la representación
+        // visual del foco.
+        lampGroup.position.copy(
+            spotLight.position
+        );
+
+    }
+);
+
+
+// ============================================================
+// SOLTAR FOCO
+// ============================================================
+
+window.addEventListener(
+    'pointerup',
+    () => {
+
+        if (
+            draggingLight
+        ) {
+
+            draggingLight =
+                false;
+
+
+            // Reactivar controles
+            // de la cámara.
+            controls.enabled =
+                true;
+
+
+            renderer.domElement.style.cursor =
+                'grab';
+
+        }
+
+    }
+);
+
+
+// ============================================================
 // COLORES DE LAS ESFERAS
 // ============================================================
 
-// Color normal
-const normalColor =
+const sphereGlassColor =
     new THREE.Color(
-        0xff7043
+        0xf8d9e8
     );
 
 
-// Color cuando ocurre una colisión
 const collisionColor =
     new THREE.Color(
-        0xffff00
+        0xff336c
     );
 
 
-// Tiempo durante el cual
-// permanece el color de colisión.
 const collisionColorDuration =
-    180;
+    220;
 
 
 // ============================================================
 // ESFERAS
 // ============================================================
 
-const spheres = [];
+const spheres =
+    [];
 
 
-// Geometría compartida
-// entre todas las esferas.
 const sphereGeometry =
     new THREE.SphereGeometry(
         sphereRadius,
-        32,
-        32
+        48,
+        48
     );
 
 
 // ============================================================
-// VELOCIDADES GLOBALES
+// VELOCIDADES
 // ============================================================
 
-let speedXValue = 0.035;
+let speedXValue =
+    0.035;
 
-let speedYValue = 0.027;
 
-let speedZValue = 0.041;
+let speedYValue =
+    0.027;
+
+
+let speedZValue =
+    0.041;
 
 
 // ============================================================
-// GENERAR SIGNO ALEATORIO
+// SIGNO ALEATORIO
 // ============================================================
 
 function randomSign() {
@@ -486,7 +1015,7 @@ function randomSign() {
 
 
 // ============================================================
-// COMPROBAR SI UNA POSICIÓN ESTÁ DISPONIBLE
+// COMPROBAR POSICIÓN DISPONIBLE
 // ============================================================
 
 function positionIsAvailable(
@@ -530,7 +1059,8 @@ function createRandomPosition() {
         new THREE.Vector3();
 
 
-    let attempts = 0;
+    let attempts =
+        0;
 
 
     do {
@@ -560,15 +1090,11 @@ function createRandomPosition() {
     }
 
     while (
-
         !positionIsAvailable(
             position
         )
-
         &&
-
         attempts < 100
-
     );
 
 
@@ -578,30 +1104,54 @@ function createRandomPosition() {
 
 
 // ============================================================
-// CREAR ESFERA
+// CREAR ESFERA DE CRISTAL
 // ============================================================
 
 function createSphere() {
 
-    // --------------------------------------------------------
-    // MATERIAL
-    // --------------------------------------------------------
-
     const material =
-        new THREE.MeshStandardMaterial({
+        new THREE.MeshPhysicalMaterial({
 
             color:
-                normalColor.clone(),
+                sphereGlassColor.clone(),
+
+            transmission:
+                0.95,
+
+            transparent:
+                true,
+
+            opacity:
+                0.62,
 
             roughness:
-                0.35
+                0.04,
+
+            metalness:
+                0,
+
+            ior:
+                1.45,
+
+            thickness:
+                1,
+
+            clearcoat:
+                0.45,
+
+            clearcoatRoughness:
+                0.05,
+
+            attenuationColor:
+                new THREE.Color(
+                    0xffbcd5
+                ),
+
+            attenuationDistance:
+                2
 
         });
 
-
-    // --------------------------------------------------------
-    // MESH
-    // --------------------------------------------------------
 
     const mesh =
         new THREE.Mesh(
@@ -610,18 +1160,17 @@ function createSphere() {
         );
 
 
-    // Posición aleatoria
     mesh.position.copy(
         createRandomPosition()
     );
 
 
-    // La esfera genera sombra
-    mesh.castShadow = true;
+    mesh.castShadow =
+        true;
 
 
-    // También puede recibir sombra
-    mesh.receiveShadow = true;
+    mesh.receiveShadow =
+        true;
 
 
     scene.add(
@@ -629,13 +1178,10 @@ function createSphere() {
     );
 
 
-    // --------------------------------------------------------
-    // OBJETO DE DATOS
-    // --------------------------------------------------------
+    spheres.push({
 
-    const sphereObject = {
-
-        mesh: mesh,
+        mesh:
+            mesh,
 
         velocity:
             new THREE.Vector3(
@@ -651,14 +1197,10 @@ function createSphere() {
 
             ),
 
-        collisionUntil: 0
+        collisionUntil:
+            0
 
-    };
-
-
-    spheres.push(
-        sphereObject
-    );
+    });
 
 }
 
@@ -693,14 +1235,13 @@ function removeSphere() {
 
 
 // ============================================================
-// CAMBIAR CANTIDAD DE ESFERAS
+// CANTIDAD DE ESFERAS
 // ============================================================
 
 function setSphereCount(
     amount
 ) {
 
-    // Agregar
     while (
         spheres.length <
         amount
@@ -711,7 +1252,6 @@ function setSphereCount(
     }
 
 
-    // Eliminar
     while (
         spheres.length >
         amount
@@ -733,9 +1273,7 @@ function showCollision(
 ) {
 
     sphere.collisionUntil =
-
         performance.now() +
-
         collisionColorDuration;
 
 
@@ -743,11 +1281,21 @@ function showCollision(
         collisionColor
     );
 
+
+    sphere.mesh.material.emissive =
+        new THREE.Color(
+            0xff174f
+        );
+
+
+    sphere.mesh.material.emissiveIntensity =
+        1.8;
+
 }
 
 
 // ============================================================
-// ACTUALIZAR COLORES
+// RESTAURAR COLOR
 // ============================================================
 
 function updateCollisionColors() {
@@ -766,8 +1314,18 @@ function updateCollisionColors() {
         ) {
 
             sphere.mesh.material.color.copy(
-                normalColor
+                sphereGlassColor
             );
+
+
+            sphere.mesh.material.emissive =
+                new THREE.Color(
+                    0x000000
+                );
+
+
+            sphere.mesh.material.emissiveIntensity =
+                0;
 
         }
 
@@ -780,10 +1338,12 @@ function updateCollisionColors() {
 // MARCAS DE IMPACTO
 // ============================================================
 
-const impactMarks = [];
+const impactMarks =
+    [];
+
 
 const impactDuration =
-    700;
+    650;
 
 
 // ============================================================
@@ -797,8 +1357,8 @@ function createImpactMark(
 
     const geometry =
         new THREE.RingGeometry(
-            0.12,
-            0.38,
+            0.08,
+            0.3,
             32
         );
 
@@ -807,13 +1367,13 @@ function createImpactMark(
         new THREE.MeshBasicMaterial({
 
             color:
-                0xffd54f,
+                0xff5b99,
 
             transparent:
                 true,
 
             opacity:
-                1,
+                0.9,
 
             side:
                 THREE.DoubleSide,
@@ -835,10 +1395,6 @@ function createImpactMark(
         position
     );
 
-
-    // --------------------------------------------------------
-    // ORIENTACIÓN SEGÚN LA CARA
-    // --------------------------------------------------------
 
     if (
         axis === 'x'
@@ -887,14 +1443,10 @@ function updateImpactMarks() {
 
 
     for (
-
         let i =
             impactMarks.length - 1;
-
         i >= 0;
-
         i--
-
     ) {
 
         const mark =
@@ -911,37 +1463,24 @@ function updateImpactMarks() {
             impactDuration;
 
 
-        // ----------------------------------------------------
-        // DESVANECER
-        // ----------------------------------------------------
-
         mark.material.opacity =
             Math.max(
                 0,
-                1 - progress
+                0.9 *
+                (1 - progress)
             );
 
-
-        // ----------------------------------------------------
-        // EXPANDIR
-        // ----------------------------------------------------
 
         const scale =
             1 +
             progress *
-            0.7;
+            1.2;
 
 
-        mark.scale.set(
-            scale,
-            scale,
+        mark.scale.setScalar(
             scale
         );
 
-
-        // ----------------------------------------------------
-        // ELIMINAR
-        // ----------------------------------------------------
 
         if (
             elapsed >=
@@ -972,7 +1511,7 @@ function updateImpactMarks() {
 
 
 // ============================================================
-// COLISIONES CONTRA LAS PAREDES
+// COLISIONES CONTRA PAREDES
 // ============================================================
 
 function checkWallCollisions(
@@ -988,7 +1527,7 @@ function checkWallCollisions(
 
 
     // ========================================================
-    // PARED X
+    // X
     // ========================================================
 
     if (
@@ -1007,7 +1546,8 @@ function checkWallCollisions(
             limit;
 
 
-        velocity.x *= -1;
+        velocity.x *=
+            -1;
 
 
         showCollision(
@@ -1036,7 +1576,7 @@ function checkWallCollisions(
 
 
     // ========================================================
-    // PARED Y
+    // Y
     // ========================================================
 
     if (
@@ -1055,7 +1595,8 @@ function checkWallCollisions(
             limit;
 
 
-        velocity.y *= -1;
+        velocity.y *=
+            -1;
 
 
         showCollision(
@@ -1084,7 +1625,7 @@ function checkWallCollisions(
 
 
     // ========================================================
-    // PARED Z
+    // Z
     // ========================================================
 
     if (
@@ -1103,7 +1644,8 @@ function checkWallCollisions(
             limit;
 
 
-        velocity.z *= -1;
+        velocity.z *=
+            -1;
 
 
         showCollision(
@@ -1143,8 +1685,6 @@ function checkSphereCollisions() {
         sphereRadius * 2;
 
 
-    // Recorremos cada pareja
-    // de esferas solamente una vez.
     for (
         let i = 0;
         i < spheres.length;
@@ -1165,30 +1705,20 @@ function checkSphereCollisions() {
                 spheres[j];
 
 
-            const positionA =
-                sphereA.mesh.position;
-
-
-            const positionB =
-                sphereB.mesh.position;
-
-
-            // Vector de A hacia B
             const difference =
                 new THREE.Vector3()
                     .subVectors(
-                        positionB,
-                        positionA
+
+                        sphereB.mesh.position,
+
+                        sphereA.mesh.position
+
                     );
 
 
             const distance =
                 difference.length();
 
-
-            // =================================================
-            // DETECTAR COLISIÓN
-            // =================================================
 
             if (
                 distance <
@@ -1197,46 +1727,40 @@ function checkSphereCollisions() {
                 distance > 0
             ) {
 
-                // Dirección de la colisión
                 const normal =
                     difference
                         .clone()
                         .normalize();
 
 
-                // =============================================
-                // SEPARAR LAS ESFERAS
-                // =============================================
-
+                // Separación para evitar
+                // que las esferas se atraviesen.
                 const overlap =
-
                     minimumDistance -
-
                     distance;
 
 
-                positionA.addScaledVector(
+                sphereA.mesh.position
+                    .addScaledVector(
 
-                    normal,
+                        normal,
 
-                    -overlap / 2
+                        -overlap / 2
 
-                );
-
-
-                positionB.addScaledVector(
-
-                    normal,
-
-                    overlap / 2
-
-                );
+                    );
 
 
-                // =============================================
-                // VELOCIDAD RELATIVA
-                // =============================================
+                sphereB.mesh.position
+                    .addScaledVector(
 
+                        normal,
+
+                        overlap / 2
+
+                    );
+
+
+                // Velocidad relativa
                 const relativeVelocity =
                     new THREE.Vector3()
                         .subVectors(
@@ -1249,14 +1773,13 @@ function checkSphereCollisions() {
 
 
                 const velocityAlongNormal =
-
                     relativeVelocity.dot(
                         normal
                     );
 
 
-                // Si ya se están alejando
-                // no aplicamos otro impulso.
+                // Si ya se están separando,
+                // no aplicar otro impulso.
                 if (
                     velocityAlongNormal >= 0
                 ) {
@@ -1266,11 +1789,12 @@ function checkSphereCollisions() {
                 }
 
 
-                // =============================================
+                // =================================================
                 // COLISIÓN ELÁSTICA
-                // =============================================
+                // =================================================
 
-                const restitution = 1;
+                const restitution =
+                    1;
 
 
                 const impulseMagnitude =
@@ -1296,11 +1820,8 @@ function checkSphereCollisions() {
 
                 sphereA.velocity
                     .addScaledVector(
-
                         impulse,
-
                         -1
-
                     );
 
 
@@ -1310,10 +1831,7 @@ function checkSphereCollisions() {
                     );
 
 
-                // =============================================
-                // CAMBIO DE COLOR
-                // =============================================
-
+                // Cambio visual
                 showCollision(
                     sphereA
                 );
@@ -1385,13 +1903,11 @@ const speedZText =
 
 
 // ============================================================
-// CONTROL DE CANTIDAD DE ESFERAS
+// CONTROL DE CANTIDAD
 // ============================================================
 
 sphereCountControl.addEventListener(
-
     'input',
-
     () => {
 
         const amount =
@@ -1409,12 +1925,11 @@ sphereCountControl.addEventListener(
         );
 
     }
-
 );
 
 
 // ============================================================
-// CAMBIAR VELOCIDAD DE UN EJE
+// CAMBIAR VELOCIDAD
 // ============================================================
 
 function changeAxisSpeed(
@@ -1432,8 +1947,6 @@ function changeAxisSpeed(
             ];
 
 
-        // Conservar la dirección
-        // actual de movimiento.
         const direction =
             current < 0
                 ? -1
@@ -1452,13 +1965,11 @@ function changeAxisSpeed(
 
 
 // ============================================================
-// CONTROL VELOCIDAD X
+// VELOCIDAD X
 // ============================================================
 
 speedXControl.addEventListener(
-
     'input',
-
     () => {
 
         speedXValue =
@@ -1468,7 +1979,9 @@ speedXControl.addEventListener(
 
 
         speedXText.textContent =
-            speedXValue.toFixed(3);
+            speedXValue.toFixed(
+                3
+            );
 
 
         changeAxisSpeed(
@@ -1477,18 +1990,15 @@ speedXControl.addEventListener(
         );
 
     }
-
 );
 
 
 // ============================================================
-// CONTROL VELOCIDAD Y
+// VELOCIDAD Y
 // ============================================================
 
 speedYControl.addEventListener(
-
     'input',
-
     () => {
 
         speedYValue =
@@ -1498,7 +2008,9 @@ speedYControl.addEventListener(
 
 
         speedYText.textContent =
-            speedYValue.toFixed(3);
+            speedYValue.toFixed(
+                3
+            );
 
 
         changeAxisSpeed(
@@ -1507,18 +2019,15 @@ speedYControl.addEventListener(
         );
 
     }
-
 );
 
 
 // ============================================================
-// CONTROL VELOCIDAD Z
+// VELOCIDAD Z
 // ============================================================
 
 speedZControl.addEventListener(
-
     'input',
-
     () => {
 
         speedZValue =
@@ -1528,7 +2037,9 @@ speedZControl.addEventListener(
 
 
         speedZText.textContent =
-            speedZValue.toFixed(3);
+            speedZValue.toFixed(
+                3
+            );
 
 
         changeAxisSpeed(
@@ -1537,7 +2048,6 @@ speedZControl.addEventListener(
         );
 
     }
-
 );
 
 
@@ -1589,21 +2099,38 @@ function animate() {
 
 
     // ========================================================
-    // ACTUALIZAR COLORES
+    // EFECTOS
     // ========================================================
 
     updateCollisionColors();
 
 
-    // ========================================================
-    // ACTUALIZAR MARCAS
-    // ========================================================
-
     updateImpactMarks();
 
 
     // ========================================================
-    // ACTUALIZAR CÁMARA
+    // ANIMACIÓN DEL HALO
+    // ========================================================
+
+    const time =
+        performance.now() *
+        0.003;
+
+
+    const haloScale =
+        1 +
+        Math.sin(
+            time
+        ) * 0.1;
+
+
+    halo.scale.setScalar(
+        haloScale
+    );
+
+
+    // ========================================================
+    // CONTROLES DE CÁMARA
     // ========================================================
 
     controls.update();
@@ -1631,21 +2158,15 @@ renderer.setAnimationLoop(
 
 
 // ============================================================
-// CAMBIO DE TAMAÑO DE VENTANA
+// RESPONSIVE
 // ============================================================
 
 window.addEventListener(
-
     'resize',
-
     () => {
 
         camera.aspect =
-
-            window.innerWidth
-
-            /
-
+            window.innerWidth /
             window.innerHeight;
 
 
@@ -1658,5 +2179,4 @@ window.addEventListener(
         );
 
     }
-
 );
